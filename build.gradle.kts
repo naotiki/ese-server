@@ -18,9 +18,6 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
 }
-dependencies {
-    implementation("io.ktor:ktor-client-cio-jvm:2.3.0")
-}
 fun kotlinw(target: String): String =
     "org.jetbrains.kotlin-wrappers:kotlin-$target"
 kotlin {
@@ -59,6 +56,10 @@ kotlin {
                 implementation("io.ktor:ktor-server-netty:$ktorVersion")
                 implementation("io.ktor:ktor-server-resources:$ktorVersion")
                 implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
+                implementation("io.ktor:ktor-server-auth:$ktorVersion")
+                implementation("io.ktor:ktor-server-sessions:$ktorVersion")
+
+                implementation("io.ktor:ktor-client-apache:$ktorVersion")
 
                 val koinVersion="3.4.0"
                 compileOnly("io.insert-koin:koin-core:$koinVersion")
