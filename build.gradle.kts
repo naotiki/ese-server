@@ -18,6 +18,9 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
 }
+dependencies {
+    implementation("io.ktor:ktor-client-cio-jvm:2.3.0")
+}
 fun kotlinw(target: String): String =
     "org.jetbrains.kotlin-wrappers:kotlin-$target"
 kotlin {
@@ -34,6 +37,7 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVersion")
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-RC")
             }
         }
 
@@ -53,14 +57,14 @@ kotlin {
                 implementation("io.ktor:ktor-server-compression:$ktorVersion")
                 implementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
                 implementation("io.ktor:ktor-server-netty:$ktorVersion")
-                implementation("io.ktor:ktor-server-locations:$ktorVersion")
+                implementation("io.ktor:ktor-server-resources:$ktorVersion")
                 implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
 
                 val koinVersion="3.4.0"
                 compileOnly("io.insert-koin:koin-core:$koinVersion")
                 implementation("io.insert-koin:koin-ktor:$koinVersion")
                 implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
-
+                implementation("ch.qos.logback:logback-classic:1.4.7")
                 implementation("software.amazon.awssdk:s3:2.20.56")
             }
         }
@@ -84,6 +88,7 @@ kotlin {
 
 application {
     mainClass.set("ServerKt")
+    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=true")
 }
 
 // include JS artifacts in any JAR we generate

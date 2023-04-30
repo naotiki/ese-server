@@ -4,12 +4,12 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
-import io.ktor.server.locations.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.callloging.*
 import io.ktor.server.plugins.compression.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.resources.*
 import io.ktor.server.routing.*
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
@@ -18,7 +18,6 @@ import org.slf4j.event.Level
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.ListObjectsRequest
 import utils.ServerProperty
 import java.net.URI
 fun main() {
@@ -40,13 +39,15 @@ private val aooModule= module {
             .forcePathStyle(s3PathStyle?.toBooleanStrict()?:false).build()
     }
 }
+
 fun Application.myApplicationModule() {
     install(CallLogging) {
         level = Level.INFO
     }
-    install(Locations)
+    install(Resources)
     install(ContentNegotiation) {
         json()
+
     }
     install(CORS) {
         allowMethod(HttpMethod.Get)
