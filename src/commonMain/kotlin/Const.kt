@@ -1,0 +1,1 @@
+const val SESSION_COOKIE="user_session"

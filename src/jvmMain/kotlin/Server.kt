@@ -64,7 +64,10 @@ fun Application.myApplicationModule() {
     }
     routing {
         routeApi()
-        staticResources("/",null)
+        singlePageApplication {
+            useResources = true
+            react("/")
+        }
     }
 }
 
