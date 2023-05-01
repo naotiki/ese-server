@@ -1,5 +1,6 @@
 package utils
 
+import api.JWTFactory
 import java.io.File
 import java.util.Properties
 import kotlin.reflect.KProperty
@@ -15,7 +16,7 @@ class ServerProperty() {
         properties.load(propertiesFile.bufferedReader())
     }
 
-    operator fun getValue(any: Any?, property: KProperty<*>): String? {
+    operator fun getValue(any: Any?, property: KProperty<*>): String {
         return properties.getProperty(property.name)
     }
 
