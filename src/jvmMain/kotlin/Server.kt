@@ -40,14 +40,20 @@ import java.security.KeyStore
 
 fun debugEnvironmentConfig(): ApplicationEngineEnvironment {
     val keyStoreFile = File("build/keystore.jks")
-    val keyStore = buildKeyStore {
+
+    val keyStore = if (keyStoreFile.exists()){
+        println("Load from ${keyStoreFile.absolutePath}")
+        KeyStore.getInstance(keyStoreFile,"123456".toCharArray())
+    }else buildKeyStore {
         certificate("sampleAlias") {
             password = "foobar"
             domains = listOf("127.0.0.1", "0.0.0.0", "localhost")
             daysValid=365*15
         }
+    }.apply {
+        saveToFile(keyStoreFile, "123456")
     }
-    keyStore.saveToFile(keyStoreFile, "123456")
+
     return applicationEngineEnvironment {
        // developmentMode = true
         connector {
