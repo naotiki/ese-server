@@ -6,6 +6,7 @@ import dao.SESSION_EXPIRE_AFTER_SECONDS
 import dao.SessionDAOFacadeImpl
 import dao.UserDAOFacadeImpl
 import io.ktor.http.*
+import io.ktor.network.tls.certificates.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -13,10 +14,13 @@ import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.callloging.*
+import io.ktor.server.plugins.callloging.CallLogging
 import io.ktor.server.plugins.compression.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.plugins.httpsredirect.*
 import io.ktor.server.resources.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import io.ktor.server.sessions.serialization.*
@@ -31,13 +35,38 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import utils.ServerProperty
+import java.io.File
 import java.net.URI
 
+fun debugEnvironmentConfig(): ApplicationEngineEnvironment {
+    val keyStoreFile = File("build/keystore.jks")
+    val keyStore = buildKeyStore {
+        certificate("sampleAlias") {
+            password = "foobar"
+            domains = listOf("127.0.0.1", "0.0.0.0", "localhost")
+        }
+    }
+    keyStore.saveToFile(keyStoreFile, "123456")
+    return applicationEngineEnvironment {
+        developmentMode=true
+        connector {
+            port=8080
+        }
+        module(Application::myApplicationModule)
+        sslConnector(
+            keyStore = keyStore,
+            keyAlias = "sampleAlias",
+            keyStorePassword = { "123456".toCharArray() },
+            privateKeyPassword = { "foobar".toCharArray() }) {
+            port = 8443
+            keyStorePath = keyStoreFile
+        }
+    }
+}
+
 fun main() {
-
-    embeddedServer(Netty, 8080, module = Application::myApplicationModule, configure = {
-
-    }).start(wait = true)
+    embeddedServer(Netty,debugEnvironmentConfig()).start(true)
+    //embeddedServer(Netty, 8080, module = Application::myApplicationModule, ).start(wait = true)
 }
 
 private val appModule = module {
@@ -70,13 +99,18 @@ const val GITHUB_OAUTH = "auth-oauth-github"
 const val SESSION_AUTH = "auth-session"
 const val JWT_AUTH = "auth-jwt"
 fun Application.myApplicationModule() {
-    DatabaseFactory.init()
-    install(CallLogging) {
-        level = Level.INFO
-    }
+
     install(Koin) {
         slf4jLogger()
         modules(appModule)
+    }
+    DatabaseFactory.init()
+    install(HttpsRedirect){
+        sslPort = 8443
+        permanentRedirect = true
+    }
+    install(CallLogging) {
+        level = Level.INFO
     }
     val sessionEncryptKey by get<ServerProperty>()
     val sessionSignKey by get<ServerProperty>()
@@ -121,6 +155,9 @@ fun Application.myApplicationModule() {
                     println(it)
                 }
 
+            }
+            challenge {
+                call.respond(HttpStatusCode.Unauthorized,"Session is invalid")
             }
         }
         /*jwt(JWT_AUTH) {
