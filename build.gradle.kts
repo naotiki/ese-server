@@ -32,11 +32,11 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-RC")
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
                 implementation("io.ktor:ktor-client-logging:$ktorVersion")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-RC")
             }
         }
 
@@ -49,9 +49,7 @@ kotlin {
 
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-serialization:$ktorVersion")
                 implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
                 implementation("io.ktor:ktor-server-cors:$ktorVersion")
                 implementation("io.ktor:ktor-server-compression:$ktorVersion")
                 implementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
@@ -61,13 +59,16 @@ kotlin {
                 implementation("io.ktor:ktor-server-auth:$ktorVersion")
                 implementation("io.ktor:ktor-server-sessions:$ktorVersion")
                 implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
-
+                implementation("io.ktor:ktor-server-http-redirect:$ktorVersion")
+                implementation("io.ktor:ktor-serialization:$ktorVersion")
+                implementation("io.ktor:ktor-network-tls-certificates:$ktorVersion")
                 implementation("io.ktor:ktor-client-apache:$ktorVersion")
 
                 val koinVersion = "3.4.0"
                 compileOnly("io.insert-koin:koin-core:$koinVersion")
                 implementation("io.insert-koin:koin-ktor:$koinVersion")
                 implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
+
                 implementation("ch.qos.logback:logback-classic:1.4.7")
                 implementation("software.amazon.awssdk:s3:2.20.56")
 
@@ -75,6 +76,8 @@ kotlin {
                 implementation("org.jetbrains.exposed:exposed-dao:0.41.1")
                 implementation("org.jetbrains.exposed:exposed-jdbc:0.41.1")
                 implementation("com.h2database:h2:2.1.214")
+                implementation("mysql:mysql-connector-java:8.0.33")
+
             }
         }
 
