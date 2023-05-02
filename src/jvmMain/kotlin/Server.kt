@@ -14,7 +14,6 @@ import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.callloging.*
-import io.ktor.server.plugins.callloging.CallLogging
 import io.ktor.server.plugins.compression.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
@@ -37,6 +36,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import utils.ServerProperty
 import java.io.File
 import java.net.URI
+import java.security.KeyStore
 
 fun debugEnvironmentConfig(): ApplicationEngineEnvironment {
     val keyStoreFile = File("build/keystore.jks")
@@ -44,13 +44,14 @@ fun debugEnvironmentConfig(): ApplicationEngineEnvironment {
         certificate("sampleAlias") {
             password = "foobar"
             domains = listOf("127.0.0.1", "0.0.0.0", "localhost")
+            daysValid=365*15
         }
     }
     keyStore.saveToFile(keyStoreFile, "123456")
     return applicationEngineEnvironment {
-        developmentMode=true
+       // developmentMode = true
         connector {
-            port=8080
+            port = 8080
         }
         module(Application::myApplicationModule)
         sslConnector(
@@ -65,7 +66,7 @@ fun debugEnvironmentConfig(): ApplicationEngineEnvironment {
 }
 
 fun main() {
-    embeddedServer(Netty,debugEnvironmentConfig()).start(true)
+    embeddedServer(Netty, debugEnvironmentConfig()).start(true)
     //embeddedServer(Netty, 8080, module = Application::myApplicationModule, ).start(wait = true)
 }
 
@@ -105,7 +106,7 @@ fun Application.myApplicationModule() {
         modules(appModule)
     }
     DatabaseFactory.init()
-    install(HttpsRedirect){
+    install(HttpsRedirect) {
         sslPort = 8443
         permanentRedirect = true
     }
@@ -121,9 +122,9 @@ fun Application.myApplicationModule() {
             serializer = KotlinxSessionSerializer<UserSession>(Json)
             cookie.path = "/"
             cookie.maxAgeInSeconds = SESSION_EXPIRE_AFTER_SECONDS
-            cookie.httpOnly=true
+            cookie.httpOnly = true
             //TODO cookie.secure=true
-            transform(SessionTransportTransformerEncrypt(secretEncryptKey,secretSignKey))
+            transform(SessionTransportTransformerEncrypt(secretEncryptKey, secretSignKey))
         }
     }
     install(Resources)
@@ -157,7 +158,7 @@ fun Application.myApplicationModule() {
 
             }
             challenge {
-                call.respond(HttpStatusCode.Unauthorized,"Session is invalid")
+                call.respond(HttpStatusCode.Unauthorized, "Session is invalid")
             }
         }
         /*jwt(JWT_AUTH) {
