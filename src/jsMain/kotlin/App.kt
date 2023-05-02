@@ -7,10 +7,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import js.core.asList
 import js.typedarrays.Int8Array
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.await
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.promise
+import kotlinx.coroutines.*
 import mui.icons.material.GitHub
 import mui.material.*
 import mui.material.styles.ThemeProvider
@@ -33,6 +30,8 @@ import web.dom.document
 import web.file.File
 import web.file.FileList
 import web.html.InputType
+import web.window.Window
+import web.window.window
 
 val client = HttpClient(Js) {
     install(ContentNegotiation) {
@@ -94,7 +93,7 @@ val App = FC<Props> {
         }
     }
 }
-
+val coroutineScope=CoroutineScope( kotlinx.browser.window.window.asCoroutineDispatcher())
 val MainPage = FC<Props> {
     var noodleFile by useState<File?>(null)
     val changedFile = useCallback<(String, FileList?) -> Unit>(noodleFile) { name, files ->
@@ -129,7 +128,7 @@ val MainPage = FC<Props> {
 
         Button {
             onClick = {
-                GlobalScope.launch {
+                coroutineScope.launch {
                     promise {
                         val byteArray = Int8Array(noodleFile!!.arrayBuffer().await()).unsafeCast<ByteArray>()
                         client.submitFormWithBinaryData(
