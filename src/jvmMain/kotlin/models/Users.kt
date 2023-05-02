@@ -1,5 +1,6 @@
 package models
 
+import PartialUser
 import dao.UIDTable
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.dao.LongEntity
@@ -26,18 +27,7 @@ class User(id: EntityID<Long>) : LongEntity(id) {
 
     fun toPartialUser() = PartialUser(id.value,name,githubId,mailAddress)
 }
-@Serializable
-data class PartialUser(
-    val id:Long,
-    val userName:String,
-    val githubId:Long,
-    val email:String
-)
 
 
 
-private fun main(){
-    User.new {
 
-    }
-}

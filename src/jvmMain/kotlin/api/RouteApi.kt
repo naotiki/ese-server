@@ -26,6 +26,7 @@ import kotlinx.coroutines.async
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
+import redirects
 import software.amazon.awssdk.services.s3.S3Client
 import java.util.*
 
@@ -106,8 +107,8 @@ internal fun Routing.routeApi() {
 
                 call.sessions.set(s)
                 //call.response.header(HttpHeaders.SetCookie, "token=$jwt; Max-Age=3600")
-                call.respondText("OK")
-                //   call.respondRedirect(redirects[principal.state!!]!!)
+
+                call.respondRedirect(redirects[principal.state!!]!!)
             }
 
         }
@@ -121,6 +122,17 @@ internal fun Routing.routeApi() {
                     call.respondText(s?.toPartialUser().toString())
 
                 } else call.respondText("null")
+            }
+            get("/user") {
+                val userSession = call.principal<UserSession>()
+                if (userSession != null) {
+                    val s = sessionDAO.userBySession(userSession.sessionId)
+                    if (s != null) {
+                        call.respond(s.toPartialUser())
+                        return@get
+                    }
+                }
+                call.respond(HttpStatusCode.Unauthorized)
             }
         }
 
