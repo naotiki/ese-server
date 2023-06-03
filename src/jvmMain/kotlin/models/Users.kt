@@ -1,13 +1,11 @@
 package models
 
-import PartialUser
+import data.PartialUser
 import dao.UIDTable
-import kotlinx.serialization.Serializable
+import data.UserDetails
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.LongIdTable
-import utils.UIDGenerator
 
 object Users : UIDTable() {
     val userName = text("name")
@@ -25,7 +23,9 @@ class User(id: EntityID<Long>) : LongEntity(id) {
     var githubAccessToken by Users.githubAccessToken
     var mailAddress by Users.mailAddress
 
-    fun toPartialUser() = PartialUser(id.value,name,githubId,mailAddress)
+    fun toPartialUser() = PartialUser(id.value,name)
+
+    fun toPartialUserWithDetail() = PartialUser(id.value,name, UserDetails(githubId,mailAddress))
 }
 
 

@@ -1,12 +1,8 @@
 package dao
 
 import dao.DatabaseFactory.dbQuery
-import models.Noodles.name
 import models.User
 import models.Users
-import models.Users.githubAccessToken
-import models.Users.mailAddress
-import utils.UIDGenerator
 
 class UserDAOFacadeImpl : UserDAOFacade {
     override suspend fun user(id: Long): User? = dbQuery {
@@ -21,7 +17,11 @@ class UserDAOFacadeImpl : UserDAOFacade {
             githubAccessToken = accessToken
         }
     }
-
+    override suspend fun userByName(name:String): User? = dbQuery {
+        User.find {
+            Users.userName eq name
+        }.singleOrNull()
+    }
     override suspend fun userByGitHub(githubId: Long): User? = dbQuery {
         User.find {
             Users.githubId eq githubId

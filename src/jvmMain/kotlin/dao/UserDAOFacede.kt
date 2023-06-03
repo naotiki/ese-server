@@ -8,5 +8,6 @@ interface UserDAOFacade {
     suspend fun userByGitHub(githubId:Long):User?
     suspend fun deleteUser(id:Long):Boolean
     suspend fun editUser(id: Long, block: User.() -> Unit): Boolean
+    suspend fun userByName(name: String): User?
 }
 

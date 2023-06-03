@@ -18,7 +18,7 @@ import react.router.dom.BrowserRouter
 import web.cssom.HtmlAttributes.Companion.align
 import web.cssom.UserSelect.Companion.element
 import web.dom.document
-val coroutineScope= CoroutineScope( window.window.asCoroutineDispatcher())
+val coroutineScope= CoroutineScope( window.asCoroutineDispatcher())
 fun main() {
     val container = document.createElement("div").also {
         document.body.appendChild(it)

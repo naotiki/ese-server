@@ -1,8 +1,6 @@
 package dao
 
-import api.UserSession
 import dao.DatabaseFactory.dbQuery
-import io.ktor.server.sessions.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializer
@@ -27,7 +25,7 @@ class SessionDAOFacadeImpl : SessionDAOFacade {
         Session.findById(id)
     }
 
-    suspend fun userBySession(id:UUID):User?= dbQuery {
+    override suspend fun userBySession(id:UUID):User?= dbQuery {
         session(id)?.user
     }
 

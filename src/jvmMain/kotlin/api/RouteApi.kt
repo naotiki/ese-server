@@ -2,13 +2,11 @@ package api
 
 import GITHUB_OAUTH
 import SESSION_AUTH
-import api.repo.Noodle
-import api.repo.NoodleRepository
+import api.s3repo.Noodle
+import api.s3repo.NoodleS3Repository
+import dao.*
 import dao.DatabaseFactory.dbQuery
-import dao.SESSION_EXPIRE_AFTER
-import dao.SessionDAOFacadeImpl
-import dao.UUIDSerializer
-import dao.UserDAOFacadeImpl
+import data.CreateNoodleRepositoryData
 import httpClient
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -17,17 +15,18 @@ import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
-import io.ktor.server.resources.*
-import io.ktor.server.resources.post
+import io.ktor.server.resources.get as resourceGet
+import io.ktor.server.resources.post as resourcePost
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
+import io.ktor.util.pipeline.*
 import kotlinx.coroutines.async
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import models.User
 import org.koin.ktor.ext.inject
 import redirects
-import software.amazon.awssdk.services.s3.S3Client
 import java.util.*
 
 @Serializable
@@ -51,11 +50,11 @@ data class GitHubEmail(
 
 fun HttpRequestBuilder.headerBearerToken(token: String) = header(HttpHeaders.Authorization, "Bearer $token")
 internal fun Routing.routeApi() {
-    val s3 by inject<S3Client>()
-    val ndlRepo by inject<NoodleRepository>()
+    val ndlRepo by inject<NoodleS3Repository>()
 
     val userDAO by inject<UserDAOFacadeImpl>()
     val sessionDAO by inject<SessionDAOFacadeImpl>()
+    val noodleDAO by inject<NoodleDAOFacadeImpl>()
     route("/api") {
 
         authenticate(GITHUB_OAUTH) {
@@ -123,31 +122,95 @@ internal fun Routing.routeApi() {
 
                 } else call.respondText("null")
             }
-            get("/user") {
+            get("/logout") {
                 val userSession = call.principal<UserSession>()
                 if (userSession != null) {
-                    val s = sessionDAO.userBySession(userSession.sessionId)
-                    if (s != null) {
-                        call.respond(s.toPartialUser())
+                    val sessionDeleted = sessionDAO.deleteSession(userSession.sessionId)
+                    if (sessionDeleted) {
+                        call.sessions.clear<UserSession>()
+
+                        call.respondRedirect(  call.request.queryParameters["redirectUrl"]?:"/")
                         return@get
                     }
                 }
-                call.respond(HttpStatusCode.Unauthorized)
+                call.respond(HttpStatusCode.Unauthorized, "Unauthorized / 認証されていません。")
+            }
+
+            route("/user") {
+                get {
+                    val userSession = call.principal<UserSession>()
+                    if (userSession != null) {
+                        val s = sessionDAO.userBySession(userSession.sessionId)
+                        if (s != null) {
+                            call.respond(s.toPartialUser())
+                            return@get
+                        }
+                    }
+                    call.respond(HttpStatusCode.Unauthorized)
+                }
+                route("/noodleRepositories") {
+                    get {
+                        userByUserSession(sessionDAO) { user ->
+                            call.respond(noodleDAO.userRepositories(user.id.value).map { it.toNoodleRepoData() })
+                        }
+                    }
+                    put {
+                        userByUserSession(sessionDAO) { user ->
+                            val (name, description, url) = call.receive<CreateNoodleRepositoryData>()
+
+                            call.respond(noodleDAO.addRepository(user, name, description.ifEmpty { null },
+                                url.ifEmpty { null }).toNoodleRepoData()
+                            )
+                        }
+
+                    }
+                    get("/checkName") {
+                        userByUserSession(sessionDAO) {
+                            val name = call.request.queryParameters["name"].toString()
+                            call.respond(
+                                noodleDAO.checkNoodleRepoName(name, it)
+                            )
+                        }
+                    }
+
+                }
             }
         }
+        authenticate(SESSION_AUTH, optional = true){
+            route("/users/{user}") {
+                get {
+                    val paramUser=userDAO.userByName(call.parameters["user"]!!)!!
+                    val u=userByUserSession(sessionDAO)
+                    call.respond(if (paramUser.name==u?.name) {
+                        paramUser.toPartialUserWithDetail()
+                    }else paramUser.toPartialUser())
+                }
+                get("/noodleRepositories") {
+                    val paramUser=userDAO.userByName(call.parameters["user"]!!)!!
+                    call.respond(noodleDAO.userRepositories(paramUser.id.value).map { it.toNoodleRepoData() })
+                }
+                route("/{noodleRepo}") {
+                    get {
+                        val paramUser=userDAO.userByName(call.parameters["user"]!!)!!
 
-        get("/clear") {
-            call.sessions.clear<UserSession>()
-            call.respondText("Clear")
+                        call.respond(noodleDAO.getRepoByUserAndName(paramUser,call.parameters["noodleRepo"]!!)!!.toNoodleRepoData())
+                    }
+                    get("/all"){
+                        val paramUser=userDAO.userByName(call.parameters["user"]!!)!!
+
+                        call.respond(noodleDAO.getNoodles(noodleDAO.getRepoByUserAndName(paramUser,call.parameters["noodleRepo"]!!)!!.id.value)
+                            .map { it.toNoodleData() })
+                    }
+                }
+
+            }
         }
-
-
-        route("/noodles") {
-            get<Noodle> {
+        route("/noodle") {
+            resourceGet<Noodle> {
                 val o = ndlRepo.getNoodleBytesOrNull(it)
                 if (o == null) {
                     call.respond(HttpStatusCode.NotFound)
-                    return@get
+                    return@resourceGet
                 }
                 call.response.header(
                     HttpHeaders.ContentDisposition,
@@ -161,23 +224,42 @@ internal fun Routing.routeApi() {
                     o.transferTo(this)
                 }
             }
-            post<Noodle> {
+
+            resourcePost<Noodle>() {
                 val multipartData = call.receiveMultipart()
 
                 if (it.version == null) {
                     call.respond(HttpStatusCode.BadRequest, "version is required")
-                    return@post
+                    return@resourcePost
                 }
 
                 multipartData.readPart()?.also { file ->
                     if (file !is PartData.FileItem) {
                         call.respond(HttpStatusCode.BadRequest, "File is invalid")
-                        return@post
+                        return@resourcePost
                     }
                     ndlRepo.putNoodleBytes(file.streamProvider().readBytes(), it)
                 }
-                call.respond("OK")
             }
+            /*TODO()
+            post<Noodle>() {
+                 val multipartData = call.receiveMultipart()
+
+                 if (it.version == null) {
+                     call.respond(HttpStatusCode.BadRequest, "version is required")
+                     return@post
+                 }
+
+                 multipartData.readPart()?.also { file ->
+                     if (file !is PartData.FileItem) {
+                         call.respond(HttpStatusCode.BadRequest, "File is invalid")
+                         return@post
+                     }
+                     ndlRepo.putNoodleBytes(file.streamProvider().readBytes(), it)
+                 }
+                 call.respond("OK")
+             }*/
+
         }
         catch("Invalid API URL")
     }
@@ -197,4 +279,26 @@ fun Route.catch(msg: String = "Invalid URL") = route("/{...}") {
         call.respondText(msg, status = HttpStatusCode.NotFound)
         finish()
     }
+}
+
+suspend inline fun PipelineContext<Unit, ApplicationCall>.userByUserSession(
+    sessionDAOFacade: SessionDAOFacade,
+    block: (User) -> Unit
+) {
+    val a = call.principal<UserSession>()
+    val user = a?.sessionId?.let { sessionDAOFacade.userBySession(it) }
+    if (user != null) {
+        block(user)
+    }
+
+}
+
+suspend inline fun PipelineContext<Unit, ApplicationCall>.userByUserSession(
+    sessionDAOFacade: SessionDAOFacade
+): User? {
+    var u: User?=null
+    userByUserSession(sessionDAOFacade) {
+        u = it
+    }
+    return u
 }

@@ -1,4 +1,8 @@
+package pages
+
+import client
 import components.NdlUploadButton
+import coroutineScope
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import js.core.asList
@@ -20,6 +24,7 @@ import web.file.FileList
 
 val MainPage = FC<Props> {
     Container {
+
         var noodleFile by useState<File?>(null)
         val changedFile = useCallback<(String, FileList?) -> Unit>(noodleFile) { name, files ->
             noodleFile = files?.asList()?.single()

@@ -1,4 +1,4 @@
-package api.repo
+package api.s3repo
 
 import io.ktor.resources.*
 import org.koin.core.component.KoinComponent
@@ -11,12 +11,11 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse
 
 private const val eseNoodleBucket = "ese-noodles"
 
-class NoodleRepository : KoinComponent {
-    val s3Client by inject<S3Client>()
+class NoodleS3Repository : KoinComponent {
+    private val s3Client by inject<S3Client>()
 
     fun getNoodleBytesOrNull(noodle: Noodle): ResponseInputStream<GetObjectResponse>? {
         return s3Client.runCatching {
-
             getObject {
                 it.bucket(eseNoodleBucket)
                 it.key(
@@ -30,6 +29,7 @@ class NoodleRepository : KoinComponent {
     }
 
     fun putNoodleBytes(byteArray: ByteArray, noodle: Noodle): Result<PutObjectResponse> {
+
         check(noodle.version != null)
         return runCatching {
             s3Client.putObject(
@@ -54,7 +54,7 @@ class NoodleRepository : KoinComponent {
 }
 
 @Resource("/{user}/{name}")
-data class Noodle(val user: String, val name: String, val version: String? = null) {
+ class Noodle(val user: String, val name: String, val version: String? = null) {
     private val path get() = "$user/$name"
     val fileName get() = "$user-$name-$version.ndl"
     val latestFileName get() = "$user-$name.ndl"

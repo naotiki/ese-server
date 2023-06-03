@@ -1,9 +1,7 @@
 package dao
 
 import kotlinx.coroutines.Dispatchers
-import models.Noodles
-import models.Sessions
-import models.Users
+import models.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.StdOutSqlLogger
@@ -33,7 +31,7 @@ object DatabaseFactory : KoinComponent {
         val db = mariadbInit()
         transaction(db) {
             addLogger(StdOutSqlLogger)
-            SchemaUtils.create(Users, Noodles, Sessions)
+            SchemaUtils.create(Users, Noodles,NoodleRepositories, Sessions)
         }
     }
 

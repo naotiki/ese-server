@@ -11,4 +11,5 @@ interface SessionDAOFacade {
     suspend fun deleteSession(id: UUID):Boolean
     suspend fun editSession(id: UUID, block: Session.() -> Unit): Boolean
     suspend fun deleteExpired(userId: Long): Int
+    suspend fun userBySession(id: UUID): User?
 }

@@ -5,4 +5,5 @@
 /build/js/packages/vollstapel/kotlin/
 /.idea/
 *.properties
+!gradle-wrapper.properties
 !gradle.properties

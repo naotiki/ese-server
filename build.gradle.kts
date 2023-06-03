@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
 val kotlinVersion = "1.8.21"
 val serializationVersion = "1.5.0"
 val ktorVersion = "2.3.0"
-val kotlinWrappersVersion = "1.0.0-pre.545"
+val kotlinWrappersVersion = "1.0.0-pre.547"//545"
 
 plugins {
     kotlin("multiplatform") version "1.8.21"
@@ -72,9 +72,11 @@ kotlin {
                 implementation("ch.qos.logback:logback-classic:1.4.7")
                 implementation("software.amazon.awssdk:s3:2.20.56")
 
-                implementation("org.jetbrains.exposed:exposed-core:0.41.1")
-                implementation("org.jetbrains.exposed:exposed-dao:0.41.1")
-                implementation("org.jetbrains.exposed:exposed-jdbc:0.41.1")
+                val exposedVersion="0.41.1"
+                implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
+                implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
+                implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
+                implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
                 implementation("com.h2database:h2:2.1.214")
                 implementation("mysql:mysql-connector-java:8.0.33")
 

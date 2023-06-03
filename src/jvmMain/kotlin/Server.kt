@@ -1,10 +1,7 @@
 import api.UserSession
-import api.repo.NoodleRepository
+import api.s3repo.NoodleS3Repository
 import api.routeApi
-import dao.DatabaseFactory
-import dao.SESSION_EXPIRE_AFTER_SECONDS
-import dao.SessionDAOFacadeImpl
-import dao.UserDAOFacadeImpl
+import dao.*
 import io.ktor.http.*
 import io.ktor.network.tls.certificates.*
 import io.ktor.serialization.kotlinx.json.*
@@ -91,13 +88,16 @@ private val appModule = module {
             .forcePathStyle(s3PathStyle.toBooleanStrict() ?: false).build()
     }
     single {
-        NoodleRepository()
+        NoodleS3Repository()
     }
     single {
         UserDAOFacadeImpl()
     }
     single {
         SessionDAOFacadeImpl()
+    }
+    single {
+        NoodleDAOFacadeImpl()
     }
 }
 
